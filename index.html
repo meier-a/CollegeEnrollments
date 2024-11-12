@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset = utf-8 />
+        <title>College Enrollments</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+
+
+    <style>
+        /*here the styling option of each elements is defined using CSS*/
+        html {
+            height: 100%;
+        }
+        
+        body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+        }
+
+        h1 {
+            position: absolute;
+            left: 50px;
+            top: 10px;
+            padding: 8px 2%;
+            margin: 0;
+            background: rgb(245, 245, 245, 0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            color: black;
+            font-size: 1.5em;
+            z-index: 800;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+        }
+
+        /* the infobox on the right upper corner*/
+        .info {
+            z-index: 1000;
+            width: 190px;
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            padding: 4px 6px;
+            font: 14px Arial, Helvetica, sans-serif;
+            text-align: right;
+            background:  rgb(245, 245, 245, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+
+        .info h4 {
+            font-size: 16px;
+            margin: 0 0 2px;
+            color: black;
+        }
+
+        /* the legend*/
+        .legend {
+            z-index: 1000;
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            padding: 6px 8px;
+            font: 14px Arial, Helvetica, sans-serif;
+            background: rgba(245, 245, 245, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            width: 170px;
+            height: 110px;
+        }
+
+        .legend-container {
+            position: relative;
+            height: 100%;
+        }
+
+        .circle-symbol {
+            border-radius: 50%;
+            display: inline-block;
+            border-color: darkred;
+            opacity: 0.4;
+            background-color: darkred;
+            position: absolute;
+            bottom: 5px;
+            left: 30%;
+            transform: translateX(-50%);
+        }
+
+        .legend-text {
+            position: absolute;
+            left: 110px;
+        }
+
+        .legend-text-1 { bottom: 10px; }
+        .legend-text-2 { bottom: 40px; }
+        .legend-text-3 { bottom: 70px; }
+
+
+
+        /* the infobox "about the map"*/
+        section {
+			position: absolute;
+			bottom: 10px;
+			left: 10px;
+			width: 280px;
+			margin: 20px auto;
+			padding: 0 15px;
+            background:  rgb(245, 245, 245, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+			z-index: 800;
+		}
+
+        #infoBox {
+            cursor: pointer;
+        }
+
+		p {
+			font-size: .9em;
+			line-height: 1.5em;
+		}
+
+		a {
+			color: #005daa;
+			text-decoration: none;
+		}
+
+		a:hover {
+			text-decoration: underline;
+		}
+
+
+
+    </style>
+    </head>
+
+    <body>
+        <div id="map"></div>
+        <h1>College Enrollments 2020</h1>
+
+        <!--button to reset the view-->
+        <button id="resetView" style="position: absolute; top: 80px; left: 10px; z-index: 1000;">Reset View</button>
+
+        <!--section "about the map" gives informations about the map-->
+        <section>
+            <div id="infoBox">
+                <h4 onclick="toggleInfoBox()">About the Map <span id="toggleButton">[-]</span></h4>
+                <div id="infoContent">
+                    <p>This interactive map provides a visual representation of college enrollment data across the United States for 2020. Each circle on the map corresponds to a state, with its size indicating the number of students enrolled in higher education institutions.</p>
+                    <p>By 2022, nationwide college enrollment had declined to approximately 15.397 million undergraduate students, reflecting a 7% drop compared to 2019. However, state-specific data is only available for 2020. In that year, California had the highest number of enrolled students, with around 2.487 million, while Alaska had the lowest, with just 22,152 students.</p>
+                    <p>Data source: Hanson, Melanie. "College Enrollment & Student Demographic Statistics." <a href="https://educationdata.org/college-enrollment-statistics">EducationData.org</a>, August 31, 2024.</p>
+                </div>
+            </div>
+        </section>
+
+        <!--loading leaflet and jquery-->
+        <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
+
+        <script>
+            //1. loading the map
+            var map = L.map('map', {
+                center: [39.5 , -95.3],
+                zoom: 3
+            });
+
+            var CartoDB_Positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                minZoom: 2,
+                maxZoom: 9
+            }).addTo(map);
+
+            // limitation of the visible map area for the USA
+            var southWest = L.latLng(0.0, -180.0);  
+            var northEast = L.latLng(66.0, -50.0);   
+            var bounds = L.latLngBounds(southWest, northEast);
+            map.setMaxBounds(bounds);
+
+          
+
+
+            //2. add the GeoJson (the feature layer)
+            var states = L.geoJson.ajax("assets/map.geojson", {
+                pointToLayer: function (feature, x){
+                    console.log("Feature:", feature);
+                    return L.circleMarker(x, {
+                        color: 'darkred',
+                        opacity: 1,
+                        fillColor: 'darkred',
+                        fillOpacity: 0.6,
+                        radius: calcRadius(feature.properties.amout)
+                    }).on({
+                        mouseover: function(e){
+                            this.setStyle({color: 'indianred',fillColor:'indianred'});
+                            info.update(feature.properties);
+                        },
+                        mouseout: function(e){
+                            this.setStyle({color:'darkred', fillColor: 'darkred'});
+                            info.update();
+                        },
+                        click: function(e) {
+                            map.setView(e.latlng, 6); 
+                        } }); } });
+                        
+                        var minValue = 20152;
+                        var minRadius = 6;
+                        
+                        function calcRadius(val) {
+                            return 1.00 * Math.pow(val/minValue,0.5)*minRadius;
+                        }
+
+                    states.addTo(map);
+
+
+            //3. event listener
+            var info = L.control();
+            info.onAdd = function(map) {
+                this._div = L.DomUtil.create('div', 'info');
+                this.update();
+                return this._div;
+            };
+
+            info.update = function (props) {
+                this._div.innerHTML = '<h4>US College Enrollments</h4>' +  (props ? 
+                '<b>' + props.name + '</b><br />' + props.amout + ' people'
+                : 'Hover over a state');
+            };
+
+            info.addTo(map);  
+            
+            
+
+            // 4. legend 
+            var legend = L.control({ position: 'bottomright' });
+
+            legend.onAdd = function (map) {
+                var lg = L.DomUtil.create('div', 'legend');
+                var sizes = [50000, 500000, 1000000];
+
+                lg.innerHTML = '<strong>Number of Students</strong><br>';
+                lg.innerHTML += '<div class="legend-container">';
+
+                sizes.forEach(function (size, index) {
+                    var radius = calcRadius(size);
+                    lg.innerHTML +=
+                        '<div class="circle-symbol" style="width: ' + (radius * 2) + 'px; height: ' + (radius * 2) + 'px;"></div>' +
+                        '<span class="legend-text legend-text-' + (index + 1) + '">' + size.toLocaleString() + '</span>';
+                });
+
+                lg.innerHTML += '</div>';
+                return lg;
+            };
+
+            legend.addTo(map);
+
+
+
+
+
+
+
+
+             // 5. create the credits
+            map.attributionControl.addAttribution('Data: Hanson, Melanie. “College Enrollment & Student Demographic Statistics”; <a href="https://educationdata.org/college-enrollment-statistics">EducationData.org</a>, August 31, 2024, | This map is made by A. Meier');
+        
+
+            
+            //6. toggle the infobox
+            function toggleInfoBox() {
+                var infoBox = document.getElementById('infoBox');
+                var infoContent = document.getElementById('infoContent');
+                var toggleButton = document.getElementById('toggleButton');
+                
+                if (infoBox.classList.contains('collapsed')) {
+                    infoBox.classList.remove('collapsed');
+                    infoContent.style.display = 'block';
+                    toggleButton.textContent = '[-]';
+                } else {
+                    infoBox.classList.add('collapsed');
+                    infoContent.style.display = 'none';
+                    toggleButton.textContent = '[+]';
+                }
+            };
+
+
+            // 7. reset view button
+
+            // define initial view
+            var initialView = {
+                center: [39.5, -95.3],
+                zoom: 3
+            };
+
+            // Add click event listener to the reset button
+            document.getElementById('resetView').addEventListener('click', function() {
+                map.setView(initialView.center, initialView.zoom);
+            });
+
+
+
+
+        </script>
+    </body>
+</html>
