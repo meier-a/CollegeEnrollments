@@ -1,6 +1,6 @@
 ## Description
 
-This interactive map visualizes college enrollment data in the United States for the year 2020. Each circle represents a state, with its size corresponding to the number of students enrolled in higher education institutions. 
+This interactive map visualizes college enrollment data in the United States for the year 2020. Circles are used as symbols to represent each state, and their size is directly proportional to the number of students enrolled in higher education institutions. The purpose of this application is to provide a clear and engaging visual representation of college enrollment data across the country. By exploring the interactive map, users can quickly assess and compare enrollment figures across states, gaining valuable insight into national and regional education trends.
 
 
 
